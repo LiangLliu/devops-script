@@ -1,0 +1,23 @@
+version: '2'
+services:
+  es:
+    image: elasticsearch:8.1.3
+    container_name: es
+    hostname: es
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge
