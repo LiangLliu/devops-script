@@ -1,4 +1,4 @@
-version: "3.1"
+version: "2.2"
 
 services:
   setup:
@@ -57,14 +57,15 @@ services:
         echo "All done!";
       '
     healthcheck:
-      test: [ "CMD-SHELL", "[ -f config/certs/es01/es01.crt ]" ]
+      test: ["CMD-SHELL", "[ -f config/certs/es01/es01.crt ]"]
       interval: 1s
       timeout: 5s
       retries: 120
 
   es01:
     depends_on:
-      - setup
+      setup:
+        condition: service_healthy
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
@@ -72,7 +73,6 @@ services:
     ports:
       - ${ES_PORT}:9200
     environment:
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - node.name=es01
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=es01,es02,es03
@@ -91,13 +91,7 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: ${MEM_LIMIT}
-        reservations:
-          memory: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT}
     ulimits:
       memlock:
         soft: -1
@@ -120,7 +114,6 @@ services:
       - certs:/usr/share/elasticsearch/config/certs
       - esdata02:/usr/share/elasticsearch/data
     environment:
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - node.name=es02
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=es01,es02,es03
@@ -138,13 +131,7 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: ${MEM_LIMIT}
-        reservations:
-          memory: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT}
     ulimits:
       memlock:
         soft: -1
@@ -167,7 +154,6 @@ services:
       - certs:/usr/share/elasticsearch/config/certs
       - esdata03:/usr/share/elasticsearch/data
     environment:
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - node.name=es03
       - cluster.name=${CLUSTER_NAME}
       - cluster.initial_master_nodes=es01,es02,es03
@@ -185,13 +171,7 @@ services:
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.license.self_generated.type=${LICENSE}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: ${MEM_LIMIT}
-        reservations:
-          memory: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT}
     ulimits:
       memlock:
         soft: -1
@@ -208,9 +188,12 @@ services:
 
   kibana:
     depends_on:
-      - es01
-      - es02
-      - es03
+      es01:
+        condition: service_healthy
+      es02:
+        condition: service_healthy
+      es03:
+        condition: service_healthy
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
     volumes:
       - certs:/usr/share/kibana/config/certs
@@ -223,14 +206,7 @@ services:
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-      - I18N_LOCALE=zh-CN
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: ${MEM_LIMIT}
-        reservations:
-          memory: ${MEM_LIMIT}
+    mem_limit: ${MEM_LIMIT}
     healthcheck:
       test:
         [
